@@ -11,7 +11,7 @@
 	],
 	"require": {
 		"php": ">= 8.3",
-		"softcreatr/jsonpath": "^0.9",
+		"softcreatr/jsonpath": "^1",
 		"typo3/cms-core": "^14.0",
 		"typo3/cms-form": "^14.0"
 	},
