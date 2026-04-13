@@ -2,26 +2,44 @@
 
 declare(strict_types=1);
 
-namespace R3H6\FormTranslator\Hooks;
+namespace R3H6\FormTranslator\EventListener;
 
 use Psr\Http\Message\ServerRequestInterface;
+use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Core\Localization\LanguageServiceFactory;
 use TYPO3\CMS\Form\Domain\Model\FormElements\AbstractFormElement;
 use TYPO3\CMS\Form\Domain\Model\Renderable\RenderableInterface;
+use TYPO3\CMS\Form\Event\AfterFormIsBuiltEvent;
 
+#[AsEventListener(identifier: 'form_translator/translate-validation-error-messages')]
 final class TranslateValidationErrorMessages
 {
     public function __construct(
         private readonly LanguageServiceFactory $languageServiceFactory
     ) {}
 
-    public function afterBuildingFinished(RenderableInterface $renderable): void
+    public function __invoke(AfterFormIsBuiltEvent $event): void
     {
-        if (!$renderable instanceof AbstractFormElement) {
-            return;
+        $form = $event->form;
+        $this->processRenderable($form);
+    }
+
+    private function processRenderable(RenderableInterface $renderable): void
+    {
+        if ($renderable instanceof AbstractFormElement) {
+            $this->translateValidationErrorMessages($renderable);
         }
 
+        if (method_exists($renderable, 'getRenderables')) {
+            foreach ($renderable->getRenderables() as $child) {
+                $this->processRenderable($child);
+            }
+        }
+    }
+
+    private function translateValidationErrorMessages(AbstractFormElement $renderable): void
+    {
         $validationErrorMessages = $renderable->getProperties()['validationErrorMessages'] ?? [];
         if (empty($validationErrorMessages)) {
             return;
@@ -45,11 +63,11 @@ final class TranslateValidationErrorMessages
         ], '<form-identifier>.validation.error.<element-identifier>.<error-code>');
 
         $translationFiles = $form->getRenderingOptions()['translation']['translationFiles'] ?? [];
-        $translationServie = $this->getLanguageService();
+        $translationService = $this->getLanguageService();
         foreach ($translationFiles as $translationFile) {
-            $translationServie->includeLLFile($translationFile);
+            $translationService->includeLLFile($translationFile);
             $input = 'LLL:' . $translationFile . ':' . $id;
-            $label = $translationServie->sL($input);
+            $label = $translationService->sL($input);
             if ($label && $label !== $input) {
                 $message['message'] = $label;
                 break;

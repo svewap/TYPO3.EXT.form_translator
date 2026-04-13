@@ -7,10 +7,6 @@ services:
   R3H6\FormTranslator\:
     resource: '../Classes/*'
 
-  R3H6\FormTranslator\Hooks\:
-    resource: '../Classes/Hooks/*'
-    public: true
-
   extensionconfiguration.form_translator.libreTranslate.host:
     class: 'string'
     factory: ['@TYPO3\CMS\Core\Configuration\ExtensionConfiguration', 'get']

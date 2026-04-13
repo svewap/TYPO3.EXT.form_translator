@@ -2,17 +2,22 @@
 
 declare(strict_types=1);
 
-namespace R3H6\FormTranslator\Hooks;
+namespace R3H6\FormTranslator\EventListener;
 
 use R3H6\FormTranslator\Service\FormService;
+use TYPO3\CMS\Core\Attribute\AsEventListener;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
+use TYPO3\CMS\Form\Event\BeforeFormIsDeletedEvent;
 
+#[AsEventListener(identifier: 'form_translator/delete-translation-file')]
 final class DeleteTranslationFile
 {
     public function __construct(private readonly FormService $formService) {}
 
-    public function beforeFormDelete(string $formPersistenceIdentifier): void
+    public function __invoke(BeforeFormIsDeletedEvent $event): void
     {
+        $formPersistenceIdentifier = $event->formPersistenceIdentifier;
+
         $form = $this->formService->parseForm($formPersistenceIdentifier);
         $translationFile = $form['renderingOptions']['translation']['translationFiles'][FormService::TRANSLATION_FILE_KEY] ?? null;
         if ($translationFile === null) {
@@ -27,8 +32,8 @@ final class DeleteTranslationFile
 
         $paths = (array)GeneralUtility::getFilesInDir($directory, $basename, true);
         $paths[] = $path;
-        foreach ($paths as $path) {
-            unlink($path);
+        foreach ($paths as $filePath) {
+            unlink($filePath);
         }
     }
 }
